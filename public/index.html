@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Slideshow</title>
+    <style type="text/css">
+        body {
+            padding: 0;
+            margin: 0;
+            background-color: white;
+            opacity: 0;
+            transition: opacity 500ms ease-in-out;
+        }
+
+        body.active {
+            opacity: 1;
+        }
+
+        #slideshow {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        img {
+            max-width: 100%;
+            max-height: 100%;
+            opacity: 0;
+            transition: opacity 500ms ease-in-out;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        img.active {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+<div id="slideshow"></div>
+
+<script type="text/javascript">
+    const IMAGES_TO_LOAD = [];
+    const SLIDESHOW_TIME = 5000 * 2;
+    const IMAGE_ACTIVE_DELAY = 250;
+    const slideshowElement = document.querySelector( '#slideshow' );
+    let images = [];
+    let slideshowInterval;
+
+    function loadImage( imageUrl ) {
+        return new Promise( ( fulfill ) => {
+            console.log( 'loadImage', imageUrl );
+            const imageElement = document.createElement( 'img' );
+            imageElement.onload = fulfill.bind( null, imageUrl );
+            imageElement.onerror = fulfill.bind( null, null );
+            imageElement.src = imageUrl;
+        } );
+    }
+
+    function loadImages( images ) {
+        return new Promise( ( fulfill ) => {
+            Promise
+                .all( images.map( loadImage ) )
+                .then( result => fulfill( result.filter( res => !!res ) ) )
+        } );
+    }
+
+    function doInitSlideshow( images ) {
+        images.forEach( image => {
+            const imageElement = document.createElement( 'img' );
+            imageElement.src = image;
+
+            slideshowElement.appendChild( imageElement );
+        } );
+    }
+
+    function doStartSlideshow() {
+        doInitSlideshow( images );
+
+        const imageElement = document.querySelector( 'img' );
+
+        if ( imageElement ) {
+            imageElement.classList.add( 'active' );
+            slideshowInterval = setInterval( doShowNextSlideshow, SLIDESHOW_TIME );
+        }
+    }
+
+    function doShowNextSlideshow() {
+        const imageElement = document.querySelector( 'img.active' );
+
+        if ( !imageElement ) {
+            return;
+        }
+
+        let nextImageElement = imageElement.nextElementSibling;
+
+        if ( !nextImageElement ) {
+            nextImageElement = document.querySelector( 'img' );
+        }
+
+        imageElement.classList.remove( 'active' );
+        nextImageElement.classList.add( 'active' );
+
+        console.log( 'doShowNextSlideshow', imageElement, nextImageElement );
+    }
+
+    function doInit() {
+        loadImages( IMAGES_TO_LOAD )
+            .then( images_ => {
+                console.log( 'doInit', 'Loaded images', images );
+                images = images_;
+
+                doStartSlideshow();
+
+                document.body.classList.add( 'active' );
+            } );
+    }
+
+    doInit();
+</script>
+
+</body>
+</html>

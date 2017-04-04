@@ -1,0 +1,11 @@
+{
+  "name": "slideshow.raspberrypi",
+  "version": "1.0.0",
+  "description": "Chromeium fullscreen slideshow on startup for Raspberry Pi",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Kris Skarbo",
+  "license": "ISC"
+}
