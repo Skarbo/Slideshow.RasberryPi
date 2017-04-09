@@ -60,14 +60,16 @@ function findSlideshowFolder() {
 function doStartApp() {
     CONFIG = getConfig();
 
-    console.log( 'doStartApp', 'Start app' );
-    findSlideshowFolder()
-        .then( () => startServer() )
-        .then( () => {
-            console.log( 'doStartApp', 'App started' );
-            lastRestart = Date.now();
-        } )
-        .catch( err => console.error( 'doStartApp', err ) );
+    console.log( 'doStartApp', 'Start app in 10 seconds' );
+    setTimeout( () => {
+        findSlideshowFolder()
+            .then( () => startServer() )
+            .then( () => {
+                console.log( 'doStartApp', 'App started' );
+                lastRestart = Date.now();
+            } )
+            .catch( err => console.error( 'doStartApp', err ) );
+    }, 10000 );
 }
 
 function startServer() {
@@ -124,13 +126,13 @@ function getConfig() {
 }
 
 usb.on( 'attach', device => {
-    console.log( 'USB device attached, waiting 10 sec to restart app', device );
+    console.log( 'attach', device );
 
-    setTimeout( doStartApp, 10000 );
+    doStartApp();
 } );
 
 usb.on( 'detach', device => {
-    console.log( 'USB device detached', device );
+    console.log( 'detach', device );
 } );
 
 doStartApp();
