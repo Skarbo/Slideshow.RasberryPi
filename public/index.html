@@ -22,6 +22,20 @@
             bottom: 0;
             left: 0;
             right: 0;
+            background-color: transparent;
+            z-index: 1;
+        }
+
+        #no-images {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            text-transform: uppercase;
+            color: #EEE;
+            font-size: 50px;
+            font-weight: bold;
         }
 
         img {
@@ -43,14 +57,18 @@
 <body>
 
 <div id="slideshow"></div>
+<div id="no-images">
+    No images to show..
+</div>
 
 <script type="text/javascript">
     const IMAGES_TO_LOAD = [];
-    const SLIDESHOW_TIME = 5000 * 2;
-    const IMAGE_ACTIVE_DELAY = 250;
+    const SLIDESHOW_INTERVAL = 5000 * 2;
     const slideshowElement = document.querySelector( '#slideshow' );
     let images = [];
     let slideshowInterval;
+    let lastRefresh = Date.now();
+    let lastRefreshCheckInterval;
 
     function loadImage( imageUrl ) {
         return new Promise( ( fulfill ) => {
@@ -86,7 +104,7 @@
 
         if ( imageElement ) {
             imageElement.classList.add( 'active' );
-            slideshowInterval = setInterval( doShowNextSlideshow, SLIDESHOW_TIME );
+            slideshowInterval = setInterval( doShowNextSlideshow, SLIDESHOW_INTERVAL );
         }
     }
 
@@ -105,8 +123,6 @@
 
         imageElement.classList.remove( 'active' );
         nextImageElement.classList.add( 'active' );
-
-        console.log( 'doShowNextSlideshow', imageElement, nextImageElement );
     }
 
     function doInit() {
@@ -118,6 +134,25 @@
                 doStartSlideshow();
 
                 document.body.classList.add( 'active' );
+            } );
+
+        lastRefreshCheckInterval = setInterval( doCheckLastRefresh, 10000 );
+    }
+
+    function doCheckLastRefresh() {
+        if ( !window.fetch ) {
+            return console.error( 'onEndOfSlideshow', 'Browser does not support fetch' );
+        }
+
+        window.fetch( '/api/status' )
+            .then( function ( response ) {
+                return response.json();
+            } )
+            .then( function ( data ) {
+                if ( data.lastRestart > lastRefresh ) {
+                    console.log( 'Server has restarted, reloading browser' );
+                    location.reload();
+                }
             } );
     }
 
