@@ -11,7 +11,7 @@ const PUBLIC_DIR = path.resolve( __dirname, 'public' );
 const IMAGES_DIR_DEFAULT = path.resolve( __dirname, 'images' );
 const CONFIG_FILE = path.resolve( __dirname, 'config.json' );
 const SETTINGS_FILE_NAME = 'SETTINGS.txt';
-const CONFIG = getConfig();
+let CONFIG = getConfig();
 
 const port = 3000;
 const app = express();
@@ -58,6 +58,8 @@ function findSlideshowFolder() {
 }
 
 function doStartApp() {
+    CONFIG = getConfig();
+
     console.log( 'doStartApp', 'Start app' );
     findSlideshowFolder()
         .then( () => startServer() )
