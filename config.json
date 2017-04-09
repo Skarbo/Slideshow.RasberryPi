@@ -1,5 +1,5 @@
 {
-  "volumesDir": "/Volumes/",
+  "volumesDir": "/media/pi/",
   "imagesDirName": "images",
   "slideshowInterval": 5000
 }
