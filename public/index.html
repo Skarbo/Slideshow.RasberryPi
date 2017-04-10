@@ -119,6 +119,7 @@
 
         if ( !nextImageElement ) {
             nextImageElement = document.querySelector( 'img' );
+            doCheckLastRefresh();
         }
 
         imageElement.classList.remove( 'active' );
@@ -128,15 +129,17 @@
     function doInit() {
         loadImages( IMAGES_TO_LOAD )
             .then( images_ => {
-                console.log( 'doInit', 'Loaded images', images );
                 images = images_;
+                console.log( 'doInit', 'Loaded images', images );
 
                 doStartSlideshow();
 
                 document.body.classList.add( 'active' );
-            } );
 
-        lastRefreshCheckInterval = setInterval( doCheckLastRefresh, 10000 );
+                if ( images.length === 0 ) {
+                    lastRefreshCheckInterval = setInterval( doCheckLastRefresh, 10000 );
+                }
+            } );
     }
 
     function doCheckLastRefresh() {

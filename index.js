@@ -140,7 +140,7 @@ function doStartApp() {
 
     setTimeout( () => {
         findSlideshowFolder()
-            .then( () => updateConfig() )
+            .then( updateConfig )
             .then( () => startServer() )
             .then( () => {
                 console.log( TAG, 'doStartApp', 'App started' );
