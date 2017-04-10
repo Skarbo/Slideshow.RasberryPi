@@ -1,5 +1,7 @@
 {
+  "serverPort": 3000,
   "volumesDir": "/media/pi/",
   "imagesDirName": "images",
-  "slideshowInterval": 5000
+  "slideshowInterval": 5000,
+  "slideshowTransition": 500
 }

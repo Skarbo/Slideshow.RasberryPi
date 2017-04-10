@@ -1,3 +1,5 @@
+// PACKAGES
+
 const http = require( 'http' );
 const fs = require( 'fs' );
 const path = require( 'path' );
@@ -7,23 +9,28 @@ const usb = require( 'usb' );
 const ini = require( 'ini' );
 const extend = require( 'extend' );
 
+// CONSTANTS
+
+const TAG = '[App~%s] ';
 const PUBLIC_DIR = path.resolve( __dirname, 'public' );
 const IMAGES_DIR_DEFAULT = path.resolve( __dirname, 'images' );
-const CONFIG_FILE = path.resolve( __dirname, 'config.json' );
 const SETTINGS_FILE_NAME = 'SETTINGS.txt';
-let CONFIG = getConfig();
+const START_APP_DELAY = 10000;
 
-const port = 3000;
+// VARIABLES
+
 const app = express();
+let config = require( path.resolve( __dirname, 'config.json' ) );
 let server;
 let lastRestart;
 let imagesFolder;
+
+// FUNCTIONS
 
 /**
  * @return {Array<String>}
  */
 function getImages() {
-    console.log( 'getImages', imagesFolder );
     try {
         return fs
             .readdirSync( imagesFolder, {encoding: 'UTF-8'} )
@@ -31,61 +38,61 @@ function getImages() {
             .map( file => `images/${file}` );
     }
     catch ( e ) {
-        console.log( 'getImages', 'Could not get images', imagesFolder );
+        console.log( TAG, 'getImages', 'Could not get images', imagesFolder );
         return [];
     }
 }
 
+/**
+ * Find slideshow folder
+ * @returns {Promise}
+ */
 function findSlideshowFolder() {
     return new Promise( ( fulfill ) => {
-        const folders = fs.readdirSync( path.resolve( CONFIG['volumesDir'] ), {encoding: 'UTF-8'} );
-        console.log( 'findSlideshowFolder', folders );
-        for ( let i = 0; i < folders.length; i++ ) {
-            try {
-                fs.statSync( path.resolve( CONFIG['volumesDir'], folders[i], CONFIG['imagesDirName'] ) );
-                imagesFolder = path.resolve( CONFIG['volumesDir'], folders[i], CONFIG['imagesDirName'] );
-                return fulfill();
-            }
-            catch ( e ) {
-                // ignore
+        try {
+            const folders = fs.readdirSync( path.resolve( config['volumesDir'] ), {encoding: 'UTF-8'} );
+            console.log( TAG, 'findSlideshowFolder', folders );
+
+            for ( let i = 0; i < folders.length; i++ ) {
+                try {
+                    fs.statSync( path.resolve( config['volumesDir'], folders[i], config['imagesDirName'] ) );
+                    imagesFolder = path.resolve( config['volumesDir'], folders[i], config['imagesDirName'] );
+                    return fulfill();
+                }
+                catch ( e ) {
+                    // ignore
+                }
             }
         }
+        catch ( e ) {
+            // ignore
+        }
 
-        console.log( 'findSlideshowFolder', 'Could not find slideshow folder, using default' );
+        console.log( TAG, 'findSlideshowFolder', 'Could not find slideshow folder, using default' );
         imagesFolder = IMAGES_DIR_DEFAULT;
         fulfill( IMAGES_DIR_DEFAULT );
     } );
 }
 
-function doStartApp() {
-    CONFIG = getConfig();
-
-    console.log( 'doStartApp', 'Start app in 10 seconds' );
-    setTimeout( () => {
-        findSlideshowFolder()
-            .then( () => startServer() )
-            .then( () => {
-                console.log( 'doStartApp', 'App started' );
-                lastRestart = Date.now();
-            } )
-            .catch( err => console.error( 'doStartApp', err ) );
-    }, 10000 );
-}
-
+/**
+ * Start server
+ * @returns {Promise}
+ */
 function startServer() {
     return new Promise( ( fulfill ) => {
         if ( server ) {
-            console.log( 'startServer', 'Stopping server' );
+            console.log( TAG, 'startServer', 'Stopping server' );
             server.close();
         }
 
-        console.log( 'startServer', imagesFolder );
+        console.log( TAG, 'startServer', imagesFolder );
 
         const parseIndexFile = () => {
             const file = fs.readFileSync( path.resolve( PUBLIC_DIR, 'index.html' ) );
             return file.toString()
                 .replace( /IMAGES_TO_LOAD = \[];/, `IMAGES_TO_LOAD = ${JSON.stringify( getImages() )};` )
-                .replace( /SLIDESHOW_INTERVAL = .*?;/, `SLIDESHOW_INTERVAL = ${CONFIG['slideshowInterval']};` );
+                .replace( /SLIDESHOW_INTERVAL = .*?;/, `SLIDESHOW_INTERVAL = ${config['slideshowInterval']};` )
+                .replace( /(\d+)ms/g, `${config['slideshowTransition']}ms` );
         };
 
         app.get( '/', ( req, res ) => {
@@ -100,39 +107,63 @@ function startServer() {
 
         app.use( '/images', express.static( imagesFolder ) );
 
-        server = app.listen( port, () => {
-            console.log( 'startServer', 'Server started', port );
+        server = app.listen( config['serverPort'], () => {
+            console.log( TAG, 'startServer', 'Server started', config['serverPort'] );
             fulfill();
         } );
     } );
 }
 
-function getConfig() {
+/**
+ * Update config with settings ini file in images folder, if one exists
+ */
+function updateConfig() {
     let settings = {};
 
     try {
-        settings = ini.decode( fs.readFileSync( path.resolve( imagesFolder, SETTINGS_FILE_NAME ), {encoding: 'UTF-8'} ) )
+        settings = ini.decode( fs.readFileSync( path.resolve( imagesFolder, SETTINGS_FILE_NAME ), {encoding: 'UTF-8'} ) ) || {};
     }
     catch ( e ) {
         // ignore
     }
 
-    try {
-        return extend( JSON.parse( fs.readFileSync( CONFIG_FILE, {encoding: 'UTF-8'} ) ) || {}, settings );
-    }
-    catch ( e ) {
-        return settings;
-    }
+    config = extend( config, settings );
+    console.log( TAG, 'updateConfig', config );
+    return true;
 }
 
+/**
+ * Start app
+ */
+function doStartApp() {
+    console.log( TAG, 'doStartApp', `Start app (in ${START_APP_DELAY} ms)` );
+
+    setTimeout( () => {
+        findSlideshowFolder()
+            .then( () => updateConfig() )
+            .then( () => startServer() )
+            .then( () => {
+                console.log( TAG, 'doStartApp', 'App started' );
+                lastRestart = Date.now();
+            } )
+            .catch( err => console.error( 'doStartApp', err, err.stack ) );
+    }, START_APP_DELAY );
+}
+
+// INIT
+
+// usb attached
 usb.on( 'attach', device => {
-    console.log( 'attach', device );
+    console.log( TAG, 'attach', device );
 
     doStartApp();
 } );
 
+// usb detached
 usb.on( 'detach', device => {
-    console.log( 'detach', device );
+    console.log( TAG, 'detach', device );
 } );
+
+// START
 
 doStartApp();
