@@ -36,6 +36,11 @@
             color: #EEE;
             font-size: 50px;
             font-weight: bold;
+            display: none;
+        }
+
+        #no-images.active {
+            display: block;
         }
 
         img {
@@ -106,6 +111,11 @@
             imageElement.classList.add( 'active' );
             slideshowInterval = setInterval( doShowNextSlideshow, SLIDESHOW_INTERVAL );
         }
+        else {
+            document.querySelector( '#no-images' ).classList.add( 'active' );
+
+            lastRefreshCheckInterval = setInterval( doCheckLastRefresh, 10000 );
+        }
     }
 
     function doShowNextSlideshow() {
@@ -135,10 +145,6 @@
                 doStartSlideshow();
 
                 document.body.classList.add( 'active' );
-
-                if ( images.length === 0 ) {
-                    lastRefreshCheckInterval = setInterval( doCheckLastRefresh, 10000 );
-                }
             } );
     }
 
